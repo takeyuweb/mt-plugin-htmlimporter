@@ -1,0 +1,28 @@
+id: HTMLImporter
+name: HTML Importer
+key: htmlimporter
+version: 0.0.1
+author_name: Yuichi Takeuchi
+author_link: http://takeyu-web.com/
+description: <__trans phrase="_PLUGIN_DESCRIPTION">
+l10n_class: HTMLImporter::L10N
+
+object_types:
+    entry:
+        im_src_relative_path: string meta
+
+applications:
+    cms:
+        menus:
+            tools:htmlimport:
+                label: Import from HTML
+                order: 200
+                view:
+                    - website
+                    - blog
+                mode: start_htmlimport
+                condition: sub { return 1 }
+
+        methods:
+            start_htmlimport: $htmlimporter::HTMLImporter::Plugin::_start_htmlimport
+            htmlimport: $htmlimporter::HTMLImporter::Plugin::_htmlimport

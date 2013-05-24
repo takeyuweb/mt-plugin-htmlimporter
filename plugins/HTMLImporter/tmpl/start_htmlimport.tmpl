@@ -1,0 +1,142 @@
+<mt:var name="page_title" value="<__trans phrase='Import settings'>">
+
+<mt:setvarblock name="html_head" append="1">
+<style type="text/css">
+.import-rule {
+    background-color: #f6f6f6;
+    border: solid 1px #ccc;
+    border-radius: 4px;
+    margin: 30px 4px;
+    padding: 4px 20px;
+    position: relative;
+}
+.import-rule .close {
+    background-color: #ddd;
+    border-radius: 50%;
+    box-shadow: 1px 1px 1px #ccc inset;
+    color: #333;
+    cursor: pointer;
+    display: inline-block;
+    font-size: 12px;
+    height: 16px;
+    line-height: 16px;
+    text-align: center;
+    text-shadow: 1px 1px 0 #fff;
+    top: 4px;
+    position: absolute;
+    right: 4px;
+    width: 16px;
+}
+</style>
+</mt:setvarblock>
+
+<mt:include name="include/header.tmpl" />
+
+<form method="post" action="<mt:var name="script_url" />" class="first-child last-child">
+    <input type="hidden" name="blog_id" value="<mt:var name="blog_id">" />
+    <input type="hidden" name="__mode" value="htmlimport" />
+    <input type="hidden" name="magic_token" value="<mt:var name="magic_token" />" />
+    
+    <fieldset>
+        <mtapp:setting
+            id="import_from"
+            required="1"
+            label="<__trans phrase='Import from'>"
+            hint="<__trans phrase='It is mapped to the web site root.'>"
+            show_hint="1">
+            <input type="text" name="import_from" id="import_from" class="text required" value="<mt:var name='import_from' escape='html'>" />
+        </mtapp:setting>
+    </fieldset>
+    
+    <fieldset>
+        <mtapp:setting
+            id="title"
+            label="<__trans phrase='Title'>">
+            &lt;title&gt;(.*?)&lt;/title&gt;
+        </mtapp:setting>
+        <mtapp:setting
+            id="description"
+            label="<__trans phrase='Description'>">
+            &lt;meta name="description" content="(.*?)"&gt;
+        </mtapp:setting>
+        <mtapp:setting
+            id="keywords"
+            label="<__trans phrase='Keywords'>">
+            &lt;meta name="keywords" content="(.*?)"&gt;
+        </mtapp:setting>
+    </fieldset>
+    
+    <textarea id="rule-tmpl" style="display: none;">
+        <fieldset class="import-rule">
+            <span class="close" title="Close">×</span>
+            <mtapp:setting
+                id="source_type_[#= count #]"
+                required="1"
+                label="<__trans phrase='Source type'>">
+                <input type="radio" name="source_type[[#= count #]]" value="css"[# if (source_type=='css') { #] checked[# } #]/>
+                <__trans phrase="CSS Selector">
+            </mtapp:setting>
+            <mtapp:setting
+                id="source_[#= count #]"
+                required="1"
+                label="<__trans phrase='Source'>">
+                <input type="text" name="source[[#= count #]]" class="text required" value="[#|h source #]" />
+            </mtapp:setting>
+            <mtapp:setting
+                id="target_[#= count #]"
+                required="1"
+                label="<__trans phrase='Target field'>">
+                <select name="target[[#= count #]]">
+                <mt:loop name="fields">
+                    <option value="<mt:var name='field' escape='html'>"[# if (target=='<mt:var name="field" escape="js">') { #] selected[# } #]><mt:var name="label" escape="html"> (<mt:var name="field" escape="html">)</option>
+                </mt:loop>
+                </select>
+            </mtapp:setting>
+        </fieldset>
+    </textarea>
+<script type="text/javascript">
+    /* <![CDATA[ */
+    Template.templates.importRule = jQuery('textarea#rule-tmpl').val();
+    /* ]]> */
+</script>
+
+    <div id="import-rules"></div>
+    <fieldset>
+        <mtapp:setting
+            id="add-rule"
+            label="">
+            <input type="button" value="<__trans phrase='Add rule'>" class="action button add-rule" />
+        </mtapp:setting>
+    </fieldset>
+
+<mt:setvarblock name="jq_js_include" append="1">
+    (function($){
+        function addRuleFields(params) {
+            params = $.extend({}, { "source_type": "", "source": "", "target": "" }, params);
+            params.count = $('.import-rule').length;
+            $('#import-rules').append(Template.process( "importRule", params ));
+        }
+        $(document).on('click', '.add-rule',function(){
+            addRuleFields({ "source_type": "css" });
+        });
+        $(document).on('click', '.import-rule .close',function(){
+           $(this).closest('.import-rule').remove();
+           return false;
+        });
+        addRuleFields({ "source_type": "css", "source": "body", "target": "text" });
+    })(jQuery);
+</mt:setvarblock>
+
+<mt:setvarblock name="action_buttons">
+  <button
+     type="submit"
+     accesskey="s"
+     title="<__trans phrase='Start import'>"
+     class="import action button primary">
+    <__trans phrase="Start import"></button>
+</mt:setvarblock>
+<mt:include name="include/actions_bar.tmpl" bar_position="bottom" hide_pager="1" settings_bar="1">
+
+</form>
+
+<mt:include name="include/footer.tmpl" />
