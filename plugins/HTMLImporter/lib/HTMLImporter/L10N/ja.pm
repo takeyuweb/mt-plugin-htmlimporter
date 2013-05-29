@@ -40,5 +40,5 @@ use vars qw( %Lexicon );
     'Start importing from HTML.'        => 'HTMLインポートを開始しました。',
     'Finish importing from HTML.'       => 'HTMLインポートを完了しました。',
     "imported: '[_1]'"      => "インポートしました： '[_1]'",
-    'Import Error: [_1]'    => 'インポートエラー：[_1]',
+    "Import Error: '[_1]' ([_2])"   => "インポートしました： '[_1]'（[_2]）",
 );

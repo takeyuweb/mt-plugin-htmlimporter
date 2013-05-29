@@ -63,7 +63,9 @@ sub process {
     
     my %data;
     $data{ basename } = File::Basename::basename( $path, @{ $driver->{ suffix_list } } ) or return $driver->error( 'basename is not present.' );
-    $data{ title } = $tree->find('title')->as_text('');
+    if ( my $title_elem = $tree->find('title') ) {
+        $data{ title } = $title_elem->as_text('');
+    }
     if ( my $node = ( $tree->look_down( '_tag', 'meta', 'name', 'keywords' ) )[0] ) {
         $data{ keywords } = $node->attr( 'content' );
     }

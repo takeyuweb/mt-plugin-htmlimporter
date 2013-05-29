@@ -108,10 +108,15 @@ sub _htmlimport {
         my $process = sub {
             my ( $path ) = @_;
             my $basename = File::Basename::basename( $path, @suffix_list );
-            if ( $driver->process( $path ) ) {
-                push @import_successes, $path;
-            } else {
-                $driver->log( $plugin->translate( 'Import Error: [_1]', $driver->errstr ) );
+            eval {
+                if ( $driver->process( $path ) ) {
+                    push @import_successes, $path;
+                } else {
+                    die $driver->errstr;
+                }
+            };
+            if ( my $errstr = $@ ) {
+                $driver->log( $plugin->translate( "Import Error: '[_1]' ([_2])", $path, $errstr ) );
                 push @import_failures, $path;
             }
         };
