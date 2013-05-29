@@ -9,11 +9,17 @@ use vars qw( %Lexicon );
 %Lexicon = (
     '_PLUGIN_DESCRIPTION'   => '既存のHTMLファイルをMTのウェブページとして一括インポート、CMS化を支援します。',
     # config.yaml
+    'Import from Web Site'  => 'ウェブサイトからインポート',
     'Import from HTML'      => 'HTMLからインポート',
     # tmpl/start_import.tmpl
     'Import settings'   => 'インポート設定',
     'Import from'       => 'インポート元ルートディレクトリ',
     'It is mapped to the web site root.'    => 'ウェブサイトルートにマッピングされます。',
+    'Target directories'    => '対象サブディレクトリ',
+    'Separated by a return.'    => '"インポート元ルートディレクトリ"以下にあるディレクトリのうち、対象とするものを改行区切りで記入。「.」の場合すべて。',
+    'Exclude directories'    => '除外サブディレクトリ',
+    'Override(Not recommended)'    => '上書き（非推奨）',
+    'Overwrite when an import target was present.'  => 'インポート先が存在するときに上書き（更新）します。',
     'Source type'       => 'データソース種別',
     'CSS Selector'      => 'CSSセレクタ',
     'Source'            => 'データソース',
@@ -23,4 +29,5 @@ use vars qw( %Lexicon );
     'Description(Override)' => '説明（上書き）',
     'Add rule'          => 'インポートルールを追加',
     'Start import'      => 'インポート開始',
+    "'[_1]' has already been imported."    => "'[_1]' はすでにインポートされています。",
 );

@@ -20,10 +20,17 @@ sub trace {
     closedir DIR;
     foreach my $item ( @items ) {
         my $path = File::Spec->catfile( $dir, $item );
+        my $type;
         if ( -d $path ) {
-            $driver->trace( $path, $filter, $handler );
-        } elsif( -f $path ) {
-            if ( $filter->( $item ) ) {
+            $type = 'directory';
+        } elsif ( -f $path ) {
+            $type = 'file';
+        }
+        
+        if ( $filter->( $type, $path ) ) {
+            if ( $type eq 'directory' ) {
+                $driver->trace( $path, $filter, $handler );
+            } elsif( $type eq 'file' ) {
                 $handler->( $path );
             }
         }

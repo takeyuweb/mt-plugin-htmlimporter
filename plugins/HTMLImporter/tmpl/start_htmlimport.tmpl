@@ -36,6 +36,7 @@
     <input type="hidden" name="blog_id" value="<mt:var name="blog_id">" />
     <input type="hidden" name="__mode" value="htmlimport" />
     <input type="hidden" name="magic_token" value="<mt:var name="magic_token" />" />
+    <input type="hidden" name="save_revision" value="1" />
     
     <fieldset>
         <mtapp:setting
@@ -45,6 +46,32 @@
             hint="<__trans phrase='It is mapped to the web site root.'>"
             show_hint="1">
             <input type="text" name="import_from" id="import_from" class="text required" value="<mt:var name='import_from' escape='html'>" />
+        </mtapp:setting>
+        <mtapp:setting
+            id="target_directories"
+            required="1"
+            label="<__trans phrase='Target directories'>"
+            hint="<__trans phrase='Separated by a return.'>"
+            show_hint="1">
+            <textarea name="target_directories" id="target_directories" class="text low required"><mt:if name="import_from"><mt:var name='target_directories'><mt:else>./</mt:if></textarea>
+        </mtapp:setting>
+        <mtapp:setting
+            id="exclude_directories"
+            label="<__trans phrase='Exclude directories'>"
+            hint="<__trans phrase='Separated by a return.'>"
+            show_hint="1">
+            <textarea name="exclude_directories" id="exclude_directories" class="text low"><mt:var name='exclude_directories'></textarea>
+        </mtapp:setting>
+        <mtapp:setting
+            id="override"
+            label="<__trans phrase='Override(Not recommended)'>"
+            hint="<__trans phrase='Overwrite when an import target was present.'>"
+            show_hint="1">
+            <mt:if name="override" eq="1">
+                <input type="checkbox" name="override" value="1" checked />
+            <mt:else>
+                <input type="checkbox" name="override" value="1"/>
+            </mt:if>
         </mtapp:setting>
     </fieldset>
     

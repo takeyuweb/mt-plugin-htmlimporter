@@ -15,7 +15,7 @@ applications:
     cms:
         menus:
             tools:htmlimport:
-                label: Import from HTML
+                label: Import from Web Site
                 order: 200
                 view:
                     - website

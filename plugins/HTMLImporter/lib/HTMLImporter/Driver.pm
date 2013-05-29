@@ -30,18 +30,20 @@ sub new {
 sub init {
     my $driver = shift;
     my %args = @_;
-    $driver->{ blog }       = $args{ blog };
-    $driver->{ user }       = $args{ user };
-    $driver->{ base_path }  = $args{ base_path };
-    $driver->{ base_url }   = $args{ base_url };
-    $driver->{ rules }      = $args{ rules };
-    $driver->{ suffix_list } = $args{ suffix_list };
+    $driver->{ blog }           = $args{ blog };
+    $driver->{ user }           = $args{ user };
+    $driver->{ base_path }      = $args{ base_path };
+    $driver->{ base_url }       = $args{ base_url };
+    $driver->{ rules }          = $args{ rules };
+    $driver->{ allow_override } = $args{ allow_override };
+    $driver->{ suffix_list }    = $args{ suffix_list };
     $driver;
 }
 
 sub process {
     my $driver = shift;
     my ( $path ) = @_;
+    my $app = MT->instance;
     my $import_from = $driver->{ base_path };
     return $driver->error( 'file not present.' ) unless $path;
     my $src_relative_path = File::Spec->abs2rel( $path, $import_from );
@@ -86,6 +88,7 @@ sub process {
    
     my @assets;
     my $page;
+    my $original;
     my @pages = MT->model( 'page' )->load({ blog_id => $blog->id, basename => $data{ basename } } );
     foreach ( @pages ) {
         if ( $src_relative_path eq $_->im_src_relative_path ) {
@@ -93,7 +96,11 @@ sub process {
             last;
         }
     }
-    unless ( $page ) {
+    if ( $page ) {
+        return $driver->error( $plugin->translate( "'[_1]' has already been imported.", $src_relative_path ) )
+            unless $driver->{ allow_override };
+        $original = $page->clone;
+    } else {
         $page = MT->model( 'page' )->new;
         $page->blog_id( $blog->id );
         $page->author_id( $author->id );
@@ -103,6 +110,9 @@ sub process {
         $page->convert_breaks( 'richtext' );
         $page->im_src_relative_path( $src_relative_path );
     }
+    my @tl = MT::Util::offset_time_list( time, $blog );
+    my $ts = sprintf '%04d%02d%02d%02d%02d%02d', $tl[ 5 ] + 1900, $tl[ 4 ] + 1, @tl[ 3, 2, 1, 0 ];
+    $page->modified_on( $ts );
     foreach my $field ( keys %data ) {
         if ( $page->can( $field ) ) {
             $data{ $field } = $driver->_save_assets( $src_relative_path, $data{ $field }, \@assets );
@@ -110,15 +120,11 @@ sub process {
         }
     }
     
+    $app->run_callbacks( 'cms_pre_save.page', $app, $page, $original );
     $page->save or die $page->errstr;
     
     if ( my $relative_path = $src_relative_path ) {
-        my @dirs = $driver->parse_dir( $relative_path );
-        my $folder;
-        foreach my $dir ( @dirs ) {
-            next if $dir eq '.';
-            $folder = _get_folder( $blog, $dir, $folder );
-        }
+        my $folder = $driver->dir2folder( $relative_path );
         if ( $folder ) {
             my @placements = MT->model( 'placement' )->load(
             { blog_id       => $blog->id,
@@ -144,16 +150,30 @@ sub process {
             $objectasset->save or die $objectasset->errstr;
         }
     }
+    $app->run_callbacks( 'cms_post_save.page', $app, $page, $original );
     
     1;
 }
 
+sub dir2folder {
+    my $driver = shift;
+    my ( $relative_path ) = @_;
+    my @dirs = $driver->parse_dir( $relative_path );
+    my $folder;
+    foreach my $dir ( @dirs ) {
+        next if $dir eq '.';
+        $folder = $driver->_get_folder( $dir, $folder );
+    }
+    $folder;
+}
+
 sub _get_folder {
-    my ( $blog, $basename, $parent ) = @_;
+    my $driver = shift;
+    my ( $basename, $parent ) = @_;
     my $user = MT->instance->user;
     
     my $folder = MT->model( 'folder' )->get_by_key(
-        { blog_id   => $blog->id,
+        { blog_id   => $driver->{ blog }->id,
           basename  => $basename,
           parent    => $parent ? $parent->id : 0,
         } );
@@ -196,24 +216,26 @@ sub _save_assets {
             return;
         }
         my $new_path = File::Spec->catfile( $blog->site_path, $relative_path );
-        if ( my $data = $driver->get( $absolute_path ) ) {
-            my $fmgr = $blog->file_mgr() || MT::FileMgr->new( 'Local' );
-            my $dir = File::Basename::dirname( $new_path );
-            $fmgr->mkpath( $dir ) unless $fmgr->exists( $dir );
-            $fmgr->put_data( $data, $new_path, 'upload' );
-        }
         my $basename = File::Basename::basename( $new_path );
         my $r_path = File::Spec->catfile( '%r', $relative_path );
         my $mime_type = guess_media_type( $new_path );
         my $asset_pkg = MT->model( 'asset' )->handler_for_file( $new_path );
         my $asset = $asset_pkg->get_by_key( { blog_id => $blog->id, file_path => $r_path } );
-        unless ( $asset->id ) {
+        if ( $asset->id ) {
+            return $asset unless $driver->{ allow_override };
+        } else {
             $asset->file_name( $basename );
             $asset->file_ext( $ext );
             $asset->label( $basename );
             $asset->url( $r_path );
             $asset->mime_type( $mime_type || 'application/octet-stream' );
             $asset->created_by( $user->id );
+        }
+        if ( my $data = $driver->get( $absolute_path ) ) {
+            my $fmgr = $blog->file_mgr() || MT::FileMgr->new( 'Local' );
+            my $dir = File::Basename::dirname( $new_path );
+            $fmgr->mkpath( $dir ) unless $fmgr->exists( $dir );
+            $fmgr->put_data( $data, $new_path, 'upload' );
         }
         if ( $asset_pkg->isa( 'MT::Asset::Image' ) ) {
             $asset->image_width( undef );
@@ -242,7 +264,9 @@ sub _save_assets {
         $img->attr( 'src', $asset->url );
         push @$ref_assets, $asset;
     }
-    my @children = $tree->guts()->content_list;
+    my $elem = $tree->guts();
+    return unless $elem;
+    my @children = $elem->content_list;
     my $result = join( "\n", map{ ref( $_ ) ? $_->as_HTML('') : $_ } @children );
     $tree = $tree->delete;
     return $result;

@@ -49,12 +49,36 @@ sub _htmlimport {
     my $q = $app->param();
     my $author = $app->user;
     
-    my $import_from = $q->param( 'import_from' );
+    my $import_from = File::Spec->canonpath( $q->param( 'import_from' ) );
+    my $override = $q->param( 'override' ) eq '1' ? 1 : 0;
+    my @target_directories = grep { $_ ne "" } split(/\r?\n/, ( $q->param( 'target_directories' ) || '' ) );
+    @target_directories = map{ File::Spec->catdir( $import_from, $_ ) } @target_directories;
+    my @exclude_directories = grep { $_ ne "" } split(/\r?\n/, ( $q->param( 'exclude_directories' ) || '' ) );
+    @exclude_directories = map{ File::Spec->catdir( $import_from, $_ ) } @exclude_directories;
+    
     my @suffix_list = qw/.html .htm .HTML .HTM/;
-    my $filter = sub {
-        my ( $filename ) = @_;
-        my $suffix = ( File::Basename::fileparse( $filename, @suffix_list ) )[2];
-        return $suffix ? 1 : 0;
+    my $filter;
+    $filter = sub {
+        my ( $type, $path ) = @_;
+        if ( $type eq 'directory' ) {
+            foreach ( @exclude_directories ) {
+                my $exclude_directory = quotemeta( $_ );
+                if ( $path =~ /^$exclude_directory($|\/)/ ) {
+                    return 0;
+                }
+            };
+            foreach ( @target_directories ) {
+                my $target_directory = quotemeta( $_ );
+                if ( $path =~ /^$target_directory($|\/)/ ) {
+                    return 1;
+                }
+            };
+            return 0;
+        } elsif ( $type eq 'file' ) {
+            my @parts = ( File::Basename::fileparse( $path, @suffix_list ) );
+            my $suffix = $parts[2];
+            return $suffix ? 1 : 0;
+        }
     };
     
     my @rules = ();
@@ -73,12 +97,15 @@ sub _htmlimport {
         user        => $author,
         base_path   => $import_from,
         rules       => \@rules,
+        allow_override  => $override,
         suffix_list => \@suffix_list );
     
     my $process = sub {
         my ( $path ) = @_;
         my $basename = File::Basename::basename( $path, @suffix_list );
-        $driver->process( $path ) or die driver()->errstr;
+        unless ( $driver->process( $path ) ) {
+            MT->log( $driver->errstr );
+        }
     };
     $driver->trace( $import_from, $filter, $process );
 }
