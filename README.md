@@ -6,12 +6,13 @@ HTML Importer for Movable Type
 * Copyright:: Copyright 2013 Yuichi Takeuchi
 * License:: MIT License
 
-既存の静的ウェブサイトからMovableType上への移行を支援する、インポーターです。
+既存の静的ウェブサイトからMovableType上への移行を支援する、HTMLインポーターです。
 
 ## 特徴
 
 * 指定ディレクトリ以下の一括インポート
   * 対象/除外ディレクトリ指定可能
+  * バックグラウンド処理対応
 * 指定した1ファイルのみのインポート（予定）
 * インポート元CSSセレクタとインポート先フィールド名によるルールを複数指定できる
   * 例) インポート元「.wrap .content」 → インポート先「本文（text）」
@@ -24,11 +25,9 @@ HTML Importer for Movable Type
 
 ##WARNING!!
 
-本プラグインは開発中バージョンです。
-
-一応の動作はしますが、不足している機能があるほか、大きな仕様変更の可能性があります。
-
 使い方を誤ると既存のウェブサイトを破壊する恐れもあるので注意して下さい。
+
+操作ミスによる破壊を防ぐため、インポート元とインポート先（ウェブサイトパス）は別々にすることを強くお勧めします。
 
 
 ## 依存モジュール
@@ -36,6 +35,12 @@ HTML Importer for Movable Type
   HTML::Selector::XPath 
   HTML::TreeBuilder::XPath
 
+## バックグラウンド処理
+
+MovableType標準の機構を利用して、時間のかかるインポートをバックグラウンドで実行することができます。
+
+  # mt-config.cgi
+  LaunchBackgroundTasks 1
 
 ##Contributing to HTML Importer
 

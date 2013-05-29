@@ -1,0 +1,82 @@
+<mt:If name="can_background_task">
+    <mt:var name="page_title" value="<__trans phrase='Start Importing'>">
+<mt:Else>
+    <mt:var name="page_title" value="<__trans phrase='Imported'>">
+</mt:If>
+
+<mt:include name="include/header.tmpl" />
+
+<h2>インポート設定</h2>
+<fieldset>
+    <mtapp:setting
+        id="import_from"
+        label="<__trans phrase='Import from'>">
+        <mt:var name="import_from" escape="html">
+    </mtapp:setting>
+    <mtapp:setting
+        id="target_directories"
+        label="<__trans phrase='Target directories'>">
+        <ul>
+            <mt:loop name="target_directories">
+                <li><mt:var name='__value__' escape="html"></ul>
+            </mt:loop>
+        </ul>
+    </mtapp:setting>
+    <mtapp:setting
+        id="exclude_directories"
+        label="<__trans phrase='Exclude directories'>">
+        <ul>
+            <mt:loop name="exclude_directories">
+                <li><mt:var name='__value__' escape="html"></ul>
+            </mt:loop>
+        </ul>
+    </mtapp:setting>
+    <mtapp:setting
+        id="override"
+        label="<__trans phrase='Override(Not recommended)'>">
+        <mt:if name="override" eq="1">
+            <__trans phrase="Yes">
+        <mt:else>
+            <__trans phrase="No">
+        </mt:if>
+    </mtapp:setting>
+</fieldset>
+<table>
+    <tr>
+        <th><__trans phrase="Source type"></th>
+        <th><__trans phrase="Source"></th>
+        <th><__trans phrase="Target field"></th>
+    </tr>
+    <mt:loop name="rules">
+        <tr>
+            <td><mt:var name="source_type" escape="html"></td>
+            <td><mt:var name="source" escape="html"></td>
+            <td><mt:var name="target" escape="html"></td>
+        </tr>
+    </mt:loop>
+</table>
+
+<mt:If name="can_background_task">
+    <p>
+        インポートタスクを開始しました。<br />
+        進捗状況はログで確認して下さい。
+    </p>
+<mt:Else>
+    <p>
+        インポートしました。<br />
+    </p>
+    <h2>インポート成功</h2>
+    <ul>
+    <mt:loop name="import_successes">
+        <li><mt:var name="__value__" escape="html"></li>
+    </mt:loop>
+    </ul>
+    <h2>インポート失敗</h2>
+    <ul>
+    <mt:loop name="import_failures">
+        <li><mt:var name="__value__" escape="html"></li>
+    </mt:loop>
+    </ul>
+</mt:If>
+
+<mt:include name="include/footer.tmpl" />

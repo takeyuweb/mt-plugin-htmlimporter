@@ -4,8 +4,9 @@ use strict;
 use warnings;
 
 use MT;
+use MT::Util;
 
-our $plugin = MT->component( 'HTMLImport' );
+our $plugin = MT->component( 'HTMLImporter' );
 
 sub _start_htmlimport {
     my $app = shift;
@@ -57,6 +58,29 @@ sub _htmlimport {
     @exclude_directories = map{ File::Spec->catdir( $import_from, $_ ) } @exclude_directories;
     
     my @suffix_list = qw/.html .htm .HTML .HTM/;
+    
+    my @rules = ();
+    foreach my $key ( $q->param ) {
+        next unless $key =~ /^source_type\[(\d+)\]/;
+        my $cursor = $1;
+        my $source_type = $q->param( "source_type[$cursor]" );
+        my $source = $q->param( "source[$cursor]" );
+        my $target = $q->param( "target[$cursor]" );
+        push @rules, { source_type => $source_type, source => $source, target => $target };
+    }
+    
+    require HTMLImporter::Driver;
+    my $driver = HTMLImporter::Driver->new( 'Local',
+        blog        => $blog,
+        user        => $author,
+        base_path   => $import_from,
+        rules       => \@rules,
+        allow_override  => $override,
+        suffix_list => \@suffix_list );
+    
+    my $can_background_task = MT::Util::launch_background_tasks();
+    my @import_successes = ();
+    my @import_failures = ();
     my $filter;
     $filter = sub {
         my ( $type, $path ) = @_;
@@ -80,34 +104,38 @@ sub _htmlimport {
             return $suffix ? 1 : 0;
         }
     };
-    
-    my @rules = ();
-    foreach my $key ( $q->param ) {
-        next unless $key =~ /^source_type\[(\d+)\]/;
-        my $cursor = $1;
-        my $source_type = $q->param( "source_type[$cursor]" );
-        my $source = $q->param( "source[$cursor]" );
-        my $target = $q->param( "target[$cursor]" );
-        push @rules, { source_type => $source_type, source => $source, target => $target };
+    my $import_func = sub {
+        my $process = sub {
+            my ( $path ) = @_;
+            my $basename = File::Basename::basename( $path, @suffix_list );
+            if ( $driver->process( $path ) ) {
+                push @import_successes, $path;
+            } else {
+                $driver->log( $plugin->translate( 'Import Error: [_1]', $driver->errstr ) );
+                push @import_failures, $path;
+            }
+        };
+        $driver->log( $plugin->translate( 'Start importing from HTML.' ) );
+        $driver->trace( $import_from, $filter, $process );
+        $driver->log( $plugin->translate( 'Finish importing from HTML.' ) );
+    };
+    if ( $can_background_task ) {
+        MT::Util::start_background_task( $import_func );
+    } else {
+        $import_func->();
     }
     
-    require HTMLImporter::Driver;
-    my $driver = HTMLImporter::Driver->new( 'Local',
-        blog        => $blog,
-        user        => $author,
-        base_path   => $import_from,
-        rules       => \@rules,
-        allow_override  => $override,
-        suffix_list => \@suffix_list );
-    
-    my $process = sub {
-        my ( $path ) = @_;
-        my $basename = File::Basename::basename( $path, @suffix_list );
-        unless ( $driver->process( $path ) ) {
-            MT->log( $driver->errstr );
-        }
+    my $tmpl = $app->load_tmpl( 'htmlimport.tmpl' );
+    my $params = {
+        can_background_task => $can_background_task,
+        import_successes    => \@import_successes,
+        rules               => \@rules,
+        import_from         => $import_from,
+        target_directories  => \@target_directories,
+        exclude_directories => \@exclude_directories,
+        override            => $override,
     };
-    $driver->trace( $import_from, $filter, $process );
+    $app->build_page( $tmpl, $params );
 }
 
 1;

@@ -50,14 +50,14 @@
         <mtapp:setting
             id="target_directories"
             required="1"
-            label="<__trans phrase='Target directories'>"
+            label="<__trans phrase='Target sub directories'>"
             hint="<__trans phrase='Separated by a return.'>"
             show_hint="1">
             <textarea name="target_directories" id="target_directories" class="text low required"><mt:if name="import_from"><mt:var name='target_directories'><mt:else>./</mt:if></textarea>
         </mtapp:setting>
         <mtapp:setting
             id="exclude_directories"
-            label="<__trans phrase='Exclude directories'>"
+            label="<__trans phrase='Exclude sub directories'>"
             hint="<__trans phrase='Separated by a return.'>"
             show_hint="1">
             <textarea name="exclude_directories" id="exclude_directories" class="text low"><mt:var name='exclude_directories'></textarea>

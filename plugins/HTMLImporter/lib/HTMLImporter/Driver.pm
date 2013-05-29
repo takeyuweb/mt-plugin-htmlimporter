@@ -152,6 +152,8 @@ sub process {
     }
     $app->run_callbacks( 'cms_post_save.page', $app, $page, $original );
     
+    $driver->log( $plugin->translate( "imported: '[_1]'", $path ), ( page => $page ) );
+    
     1;
 }
 
@@ -212,7 +214,7 @@ sub _save_assets {
         my $relative_path = File::Spec->abs2rel( $absolute_path, $root_dir );
         return unless my $ext = ( File::Basename::fileparse( $absolute_path, qw( .jpg .jpeg .png .gif .JPG .JPEG .PNG .GIF ) ) )[2];
         unless ( $driver->exists( $absolute_path ) ) {
-            MT->log( $plugin->translate( 'Asset file is not found. (href: [_1] / absolute_path: [_2])', $href, $absolute_path ) );
+            $driver->log( $plugin->translate( 'Asset file is not found. (href: [_1] / absolute_path: [_2])', $href, $absolute_path ) );
             return;
         }
         my $new_path = File::Spec->catfile( $blog->site_path, $relative_path );
@@ -270,6 +272,21 @@ sub _save_assets {
     my $result = join( "\n", map{ ref( $_ ) ? $_->as_HTML('') : $_ } @children );
     $tree = $tree->delete;
     return $result;
+}
+
+sub log {
+    my $driver = shift;
+    my $message = shift;
+    my %opts = @_;
+    my $page = $opts{ page };
+    MT->log({
+        blog_id     => $driver->{ blog }->id,
+        author_i    => $driver->{ user }->id,
+        message     => $message,
+        category    => 'HTMLImporter',
+        ( $page ? ( metadata    => $page->id )          : () ),
+        ( $page ? ( class       => 'MT::Log::Page' )    : () ),
+    });
 }
 
 sub trace   { Carp::croak("NOT IMPLEMENTED"); }
