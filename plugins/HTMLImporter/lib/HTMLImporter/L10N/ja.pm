@@ -22,6 +22,7 @@ use vars qw( %Lexicon );
     'Overwrite when an import target was present.'  => 'インポート先が存在するときに上書き（更新）します。',
     'Source type'       => 'データソース種別',
     'CSS Selector'      => 'CSSセレクタ',
+    'Regular Expression'    => '正規表現',
     'Source'            => 'データソース',
     'Target field'      => 'インポート先フィールド',
     'Title(Override)'   => 'タイトル（上書き）',

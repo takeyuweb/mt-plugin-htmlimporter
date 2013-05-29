@@ -100,8 +100,10 @@
                 id="source_type_[#= count #]"
                 required="1"
                 label="<__trans phrase='Source type'>">
-                <input type="radio" name="source_type[[#= count #]]" value="css"[# if (source_type=='css') { #] checked[# } #]/>
-                <__trans phrase="CSS Selector">
+                <input type="radio" name="source_type[[#= count #]]" id="source_type_[[#= count #]]_css" value="css"[# if (source_type=='css') { #] checked[# } #]/>
+                <label for="source_type_[[#= count #]]_css"><__trans phrase="CSS Selector"></label>
+                <input type="radio" name="source_type[[#= count #]]" id="source_type_[[#= count #]]_regexp" value="regexp"[# if (source_type=='regexp') { #] checked[# } #]/>
+                <label for="source_type_[[#= count #]]_regexp"><__trans phrase="Regular Expression"></label>
             </mtapp:setting>
             <mtapp:setting
                 id="source_[#= count #]"

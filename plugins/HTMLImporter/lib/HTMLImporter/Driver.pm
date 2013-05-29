@@ -74,17 +74,25 @@ sub process {
     }
     foreach my $rule ( @$rules ) {
         my ( $source_type, $source, $target ) = ( $rule->{ source_type },  $rule->{ source }, $rule->{ target } );
-        my @elems;
+        my $html;
         if ( $source_type eq 'css' ) {
+            my @elems;
             @elems =  $tree->findnodes( selector_to_xpath( $rule->{ source }  ));
+            my @parts;
+            foreach my $elem ( @elems ) {
+                my @children = $elem->content_list;
+                 push @parts, join( "\n", map{ ref( $_ ) ? $_->as_HTML('') : $_ } @children );
+            }
+            if ( @parts ) {
+                $html = join "\n", @parts;
+            }
+        } elsif ( $source_type eq 'regexp' ) {
+            if ( $text =~ m|@{[ $rule->{ source } ]}|si ) {
+                $html = $1;
+            }
         }
         
-        my @parts;
-        foreach my $elem ( @elems ) {
-            my @children = $elem->content_list;
-             push @parts, join( "\n", map{ ref( $_ ) ? $_->as_HTML('') : $_ } @children );
-        }
-        $data{ $target } = join "\n", @parts;
+        $data{ $target } = $html if defined( $html );
     }
     $tree = $tree->delete;
    
@@ -116,7 +124,7 @@ sub process {
     my $ts = sprintf '%04d%02d%02d%02d%02d%02d', $tl[ 5 ] + 1900, $tl[ 4 ] + 1, @tl[ 3, 2, 1, 0 ];
     $page->modified_on( $ts );
     foreach my $field ( keys %data ) {
-        if ( $page->can( $field ) ) {
+        if ( $page->can( $field ) || $field =~ /^field\./ ) {
             $data{ $field } = $driver->_save_assets( $src_relative_path, $data{ $field }, \@assets );
             $page->$field( $data{ $field } );
         }
