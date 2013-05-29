@@ -91,13 +91,7 @@ sub _htmlimport {
                     return 0;
                 }
             };
-            foreach ( @target_directories ) {
-                my $target_directory = quotemeta( $_ );
-                if ( $path =~ /^$target_directory($|\/)/ ) {
-                    return 1;
-                }
-            };
-            return 0;
+            return 1;
         } elsif ( $type eq 'file' ) {
             my @parts = ( File::Basename::fileparse( $path, @suffix_list ) );
             my $suffix = $parts[2];
@@ -121,7 +115,9 @@ sub _htmlimport {
             }
         };
         $driver->log( $plugin->translate( 'Start importing from HTML.' ) );
-        $driver->trace( $import_from, $filter, $process );
+        foreach my $target_directory ( @target_directories ) {
+            $driver->trace( $target_directory, $filter, $process );
+        }
         $driver->log( $plugin->translate( 'Finish importing from HTML.' ) );
     };
     if ( $can_background_task ) {
