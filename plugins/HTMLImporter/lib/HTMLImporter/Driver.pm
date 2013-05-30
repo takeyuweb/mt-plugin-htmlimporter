@@ -214,14 +214,22 @@ sub _save_assets {
     my $save_asset = sub {
         my ( $href ) = @_;
         my $absolute_path;
-        if ( $href =~ /^https?:/ ) {
+        my $uri = URI->new( $href );
+        if ( $href =~ m!^\w+://! ) {
             # 
-        } elsif ( $href =~ /^\// ) {
-            $absolute_path = File::Spec->catfile( $root_dir, $href );
+        } elsif ( $href =~ m!^/! ) {
+            $absolute_path = File::Spec->catfile( $root_dir, $uri->path() );
         } else {
-            $absolute_path = File::Spec->rel2abs( $href, File::Spec->catdir( $root_dir, File::Basename::dirname( $relative_file ) ) );
+            $href =~ m!^([^#]*)!;
+            $absolute_path = File::Spec->rel2abs( $1, File::Spec->catdir( $root_dir, File::Basename::dirname( $relative_file ) ) );
         }
         return unless $absolute_path;
+        
+        # 拡張子なしならスキップ
+        return unless ( $absolute_path =~ /(\..+?)$/ );
+        # HTMLの拡張子ならスキップ
+        return if ( File::Basename::fileparse( $absolute_path, @{ $driver->{ suffix_list } } ) )[2];
+        
         $absolute_path = File::Spec->canonpath( $absolute_path );
         my $relative_path = File::Spec->abs2rel( $absolute_path, $root_dir );
         unless ( $driver->exists( $absolute_path ) ) {

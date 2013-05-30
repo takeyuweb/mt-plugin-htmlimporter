@@ -111,7 +111,6 @@ sub _htmlimport_by_directory {
         } elsif ( $type eq 'file' ) {
             my @parts = ( File::Basename::fileparse( $path, @suffix_list ) );
             my $suffix = $parts[2];
-            MT->log( "suffix:$suffix (@{[Data::Dumper->Dump(\@suffix_list)]})" );
             return $suffix ? 1 : 0;
         }
     };
