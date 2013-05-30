@@ -208,12 +208,6 @@ sub _save_assets {
     my $root_dir = $driver->{ base_path }; 
     my $app = MT->instance;
     my $tree = HTML::TreeBuilder::XPath->new;
-    $tree->no_space_compacting( 1 );
-    $tree->store_comments( 1 );
-    my $marker_id = time . '_' . rand( time );
-    my $start_marker = '<!--[[START_MARKER_' .  $marker_id . ']]-->';
-    my $end_marker = '<!--[[END_MARKER_' .  $marker_id . ']]-->';
-    $html = "<div>$start_marker" . ( $html || '' ) . "$end_marker</div>";
     $tree->parse( $html );
     $tree->eof();
     
@@ -267,28 +261,25 @@ sub _save_assets {
         return $asset;
     };
     
+    my $result = $html;
     my @anchors = $tree->find( 'a' );
     foreach my $anchor ( @anchors ) {
         my $href = $anchor->attr( 'href' );
         next unless defined( $href );
-        $href = MT::Util::decode_url( $href );
-        my $asset = $save_asset->( $href ) or next;
-        $anchor->attr( 'href', $asset->url );
+        my $url = MT::Util::decode_url( $href );
+        my $asset = $save_asset->( $url ) or next;
+        $result =~ s/@{[ quotemeta( $href ) ]}/@{[ $asset->url ]}/g;
         push @$ref_assets, $asset;
     }
     my @imgs = $tree->find( 'img' );
     foreach my $img ( @imgs ) {
         my $src = $img->attr( 'src' );
         next unless defined( $src );
-        $src = MT::Util::decode_url( $src );
-        my $asset = $save_asset->( $src ) or next;
-        $img->attr( 'src', $asset->url );
+        my $url = MT::Util::decode_url( $src );
+        my $asset = $save_asset->( $url ) or next;
+        $result =~ s/@{[ quotemeta( $src ) ]}/@{[ $asset->url ]}/g;
         push @$ref_assets, $asset;
     }
-    my $result = $tree->as_HTML( '' );
-    $tree = $tree->delete;
-    $result =~ s/^.*@{[ quotemeta($start_marker) ]}//m;
-    $result =~ s/@{[ quotemeta($end_marker) ]}.*$//m;
     return $result;
 }
 
