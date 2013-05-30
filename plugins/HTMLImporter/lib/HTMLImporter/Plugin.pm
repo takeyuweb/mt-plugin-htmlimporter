@@ -99,7 +99,6 @@ sub _htmlimport_by_directory {
     my $filter;
     $filter = sub {
         my ( $type, $path ) = @_;
-        MT->log("[$type] path:$path");
         if ( $type eq 'directory' ) {
             foreach ( @exclude_directories ) {
                 my $exclude_directory = quotemeta( $_ );
