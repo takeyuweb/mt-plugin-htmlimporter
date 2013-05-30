@@ -34,7 +34,7 @@ use vars qw( %Lexicon );
     'Description(Override)' => '説明（上書き）',
     'Add rule'          => 'インポートルールを追加',
     'Start import'      => 'インポート開始',
-    "'[_1]' has already been imported."    => "'[_1]' はすでにインポートされています。",
+    "'[_1]' has already been imported. Skipped."    => "'[_1]' はすでにインポートされています。スキップしました。",
     # tmpl/import.tmpl
     'Start Importing'       => 'インポート開始',
     'Imported'              => 'インポート完了',

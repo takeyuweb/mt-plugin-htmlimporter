@@ -81,7 +81,7 @@
     <h2>インポート成功</h2>
     <ul>
     <mt:loop name="import_successes">
-        <li><mt:var name="__value__" escape="html"></li>
+        <li><mt:var name="path" escape="html"> (<a href="<mt:var name='script_url' />?__mode=view&_type=page&blog_id=<mt:var name='blog_id'>&id=<mt:var name='page' key='id'>">id:<mt:var name="page" key="id"> <mt:If name="page{title}"><mt:var name="page" key="title" escape="html"><mt:else><__trans phrase="(Untitled entry)" /></mt:if></a>)</li>
     </mt:loop>
     </ul>
     <h2>インポート失敗</h2>

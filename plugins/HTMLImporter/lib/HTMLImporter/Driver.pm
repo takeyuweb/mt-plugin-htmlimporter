@@ -109,7 +109,7 @@ sub process {
         }
     }
     if ( $page ) {
-        return $driver->error( $plugin->translate( "'[_1]' has already been imported.", $src_relative_path ) )
+        return $driver->error( $plugin->translate( "'[_1]' has already been imported. Skipped.", $src_relative_path ), ( page => $page ) )
             unless $driver->{ allow_override };
         $original = $page->clone;
     } else {
@@ -166,7 +166,7 @@ sub process {
     
     $driver->log( $plugin->translate( "imported: '[_1]'", $path ), ( page => $page ) );
     
-    1;
+    return $page;
 }
 
 sub dir2folder {
@@ -230,7 +230,6 @@ sub _save_assets {
         return unless $absolute_path;
         $absolute_path = File::Spec->canonpath( $absolute_path );
         my $relative_path = File::Spec->abs2rel( $absolute_path, $root_dir );
-        return unless my $ext = ( File::Basename::fileparse( $absolute_path, qw( .jpg .jpeg .png .gif .JPG .JPEG .PNG .GIF ) ) )[2];
         unless ( $driver->exists( $absolute_path ) ) {
             $driver->log( $plugin->translate( 'Asset file is not found. (href: [_1] / absolute_path: [_2])', $href, $absolute_path ) );
             return;
@@ -245,7 +244,9 @@ sub _save_assets {
             return $asset unless $driver->{ allow_override };
         } else {
             $asset->file_name( $basename );
-            $asset->file_ext( $ext );
+            if ( $basename =~ /(\..+?)$/ ) {
+                $asset->file_ext( $1 );
+            }
             $asset->label( $basename );
             $asset->url( $r_path );
             $asset->mime_type( $mime_type || 'application/octet-stream' );

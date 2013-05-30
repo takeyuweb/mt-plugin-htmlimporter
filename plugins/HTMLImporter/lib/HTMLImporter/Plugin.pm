@@ -72,7 +72,7 @@ sub _htmlimport_by_directory {
     my @exclude_directories = grep { $_ ne "" } split(/\r?\n/, ( $q->param( 'exclude_directories' ) || '' ) );
     @exclude_directories = map{ File::Spec->catdir( $import_from, $_ ) } @exclude_directories;
     
-    my @suffix_list = qw/.html .htm .HTML .HTM/;
+    my @suffix_list = @{ $app->config->HTMLSuffix };
     
     my @rules = ();
     foreach my $key ( $q->param ) {
@@ -99,6 +99,7 @@ sub _htmlimport_by_directory {
     my $filter;
     $filter = sub {
         my ( $type, $path ) = @_;
+        MT->log("[$type] path:$path");
         if ( $type eq 'directory' ) {
             foreach ( @exclude_directories ) {
                 my $exclude_directory = quotemeta( $_ );
@@ -110,6 +111,7 @@ sub _htmlimport_by_directory {
         } elsif ( $type eq 'file' ) {
             my @parts = ( File::Basename::fileparse( $path, @suffix_list ) );
             my $suffix = $parts[2];
+            MT->log( "suffix:$suffix (@{[Data::Dumper->Dump(\@suffix_list)]})" );
             return $suffix ? 1 : 0;
         }
     };
@@ -118,8 +120,8 @@ sub _htmlimport_by_directory {
             my ( $path ) = @_;
             my $basename = File::Basename::basename( $path, @suffix_list );
             eval {
-                if ( $driver->process( $path ) ) {
-                    push @import_successes, $path;
+                if ( my $page = $driver->process( $path ) ) {
+                    push @import_successes, { path => $path, page => { id => $page->id, title => $page->title } };
                 } else {
                     die $driver->errstr;
                 }
@@ -168,7 +170,7 @@ sub _htmlimport_by_file {
     my @target_files = grep { $_ ne "" } split(/\r?\n/, ( $q->param( 'target_files' ) || '' ) );
     @target_files = map{ File::Spec->catdir( $import_from, $_ ) } @target_files;
     
-    my @suffix_list = qw/.html .htm .HTML .HTM/;
+    my @suffix_list = @{ $app->config->HTMLSuffix };
     
     my @rules = ();
     foreach my $key ( $q->param ) {
@@ -197,8 +199,8 @@ sub _htmlimport_by_file {
         $driver->log( $plugin->translate( 'Start importing from HTML.' ) );
         foreach my $path ( @target_files ) {
             eval {
-                if ( $driver->process( $path ) ) {
-                    push @import_successes, $path;
+                if ( my $page = $driver->process( $path ) ) {
+                    push @import_successes, { path => $path, page => { id => $page->id, title => $page->title } };
                 } else {
                     die $driver->errstr;
                 }

@@ -7,6 +7,14 @@ author_link: http://takeyu-web.com/
 description: <__trans phrase="_PLUGIN_DESCRIPTION">
 l10n_class: HTMLImporter::L10N
 
+config_settings:
+    HTMLSuffix:
+        default:
+            - ".html"
+            - ".htm"
+            - ".HTML"
+            - ".HTM"
+
 object_types:
     entry:
         im_src_relative_path: string meta
