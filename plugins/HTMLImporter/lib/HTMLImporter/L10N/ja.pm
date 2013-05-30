@@ -10,6 +10,7 @@ use vars qw( %Lexicon );
     '_PLUGIN_DESCRIPTION'   => '既存のHTMLファイルをMTのウェブページとして一括インポート、CMS化を支援します。',
     # config.yaml
     'Import from HTML'      => 'HTMLからインポート',
+    "Import Source"         => "インポート元",
     # tmpl/start_import.tmpl
     'Import settings'   => 'インポート設定',
     'Document root(import from)'            => 'ドキュメントルート（インポート元）',

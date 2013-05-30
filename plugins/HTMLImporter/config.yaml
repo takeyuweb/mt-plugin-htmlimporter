@@ -2,6 +2,7 @@ id: HTMLImporter
 name: HTML Importer
 key: htmlimporter
 version: 0.0.2
+schema_version: 0.005
 author_name: Yuichi Takeuchi
 author_link: http://takeyu-web.com/
 description: <__trans phrase="_PLUGIN_DESCRIPTION">
@@ -17,7 +18,15 @@ config_settings:
 
 object_types:
     entry:
-        im_src_relative_path: string meta
+        im_src_relative_path: string(255)
+
+list_properties:
+    page:
+        im_src_relative_path: |
+            sub {
+                my $plugin = MT->component( 'HTMLImporter' );
+                $plugin->translate( "Import Source" );
+            }
 
 applications:
     cms:
