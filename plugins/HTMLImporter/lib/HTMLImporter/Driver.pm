@@ -58,6 +58,8 @@ sub process {
     $text = MT::I18N::encode_text( $text, MT::I18N::guess_encoding( $text ), 'utf-8' );
     $text = Encode::is_utf8($text) ? $text : Encode::decode_utf8($text);
     my $tree = HTML::TreeBuilder::XPath->new;
+    $tree->no_space_compacting( 1 );
+    $tree->store_comments( 1 );
     $tree->parse( $text );
     $tree->eof();
     
@@ -206,6 +208,12 @@ sub _save_assets {
     my $root_dir = $driver->{ base_path }; 
     my $app = MT->instance;
     my $tree = HTML::TreeBuilder::XPath->new;
+    $tree->no_space_compacting( 1 );
+    $tree->store_comments( 1 );
+    my $marker_id = time . '_' . rand( time );
+    my $start_marker = '<!--[[START_MARKER_' .  $marker_id . ']]-->';
+    my $end_marker = '<!--[[END_MARKER_' .  $marker_id . ']]-->';
+    $html = "<div>$start_marker" . ( $html || '' ) . "$end_marker</div>";
     $tree->parse( $html );
     $tree->eof();
     
@@ -276,11 +284,10 @@ sub _save_assets {
         $img->attr( 'src', $asset->url );
         push @$ref_assets, $asset;
     }
-    my $elem = $tree->guts();
-    return unless $elem;
-    my @children = $elem->content_list;
-    my $result = join( "\n", map{ ref( $_ ) ? $_->as_HTML('') : $_ } @children );
+    my $result = $tree->as_HTML( '' );
     $tree = $tree->delete;
+    $result =~ s/^.*@{[ quotemeta($start_marker) ]}//m;
+    $result =~ s/@{[ quotemeta($end_marker) ]}.*$//m;
     return $result;
 }
 
