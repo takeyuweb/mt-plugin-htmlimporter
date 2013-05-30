@@ -48,6 +48,21 @@ sub _htmlimport {
     my $blog = $app->blog or return $app->trans_error( 'Invalid request' );
     $app->validate_magic or return $app->trans_error( 'Invalid request' );
     my $q = $app->param();
+    
+    my $target_type = $q->param( 'target_type' );
+    if ( $target_type eq 'file' ) {
+        _htmlimport_by_file( $app );
+    } elsif ( $target_type eq 'directory' ) {
+        _htmlimport_by_directory( $app );
+    } else {
+        return $app->trans_error( 'Invalid request' );
+    }
+}
+
+sub _htmlimport_by_directory {
+    my $app = shift;
+    my $blog = $app->blog;
+    my $q = $app->param();
     my $author = $app->user;
     
     my $import_from = File::Spec->canonpath( $q->param( 'import_from' ) );
@@ -111,7 +126,7 @@ sub _htmlimport {
             };
             if ( my $errstr = $@ ) {
                 $driver->log( $plugin->translate( "Import Error: '[_1]' ([_2])", $path, $errstr ) );
-                push @import_failures, $path;
+                push @import_failures, { path => $path, errstr => $errstr };
             }
         };
         $driver->log( $plugin->translate( 'Start importing from HTML.' ) );
@@ -130,10 +145,86 @@ sub _htmlimport {
     my $params = {
         can_background_task => $can_background_task,
         import_successes    => \@import_successes,
+        import_failures     => \@import_failures,
         rules               => \@rules,
         import_from         => $import_from,
+        target_type         => 'directory',
         target_directories  => \@target_directories,
         exclude_directories => \@exclude_directories,
+        override            => $override,
+    };
+    $app->build_page( $tmpl, $params );
+}
+
+
+sub _htmlimport_by_file {
+    my $app = shift;
+    my $blog = $app->blog;
+    my $q = $app->param();
+    my $author = $app->user;
+    
+    my $import_from = File::Spec->canonpath( $q->param( 'import_from' ) );
+    my $override = $q->param( 'override' ) eq '1' ? 1 : 0;
+    my @target_files = grep { $_ ne "" } split(/\r?\n/, ( $q->param( 'target_files' ) || '' ) );
+    @target_files = map{ File::Spec->catdir( $import_from, $_ ) } @target_files;
+    
+    my @suffix_list = qw/.html .htm .HTML .HTM/;
+    
+    my @rules = ();
+    foreach my $key ( $q->param ) {
+        next unless $key =~ /^source_type\[(\d+)\]/;
+        my $cursor = $1;
+        my $source_type = $q->param( "source_type[$cursor]" );
+        my $source = $q->param( "source[$cursor]" );
+        my $target = $q->param( "target[$cursor]" );
+        push @rules, { source_type => $source_type, source => $source, target => $target };
+    }
+    
+    require HTMLImporter::Driver;
+    my $driver = HTMLImporter::Driver->new( 'Local',
+        blog        => $blog,
+        user        => $author,
+        base_path   => $import_from,
+        rules       => \@rules,
+        allow_override  => $override,
+        suffix_list => \@suffix_list );
+    
+    my $can_background_task = MT::Util::launch_background_tasks();
+    my @import_successes = ();
+    my @import_failures = ();
+
+    my $import_func = sub {
+        $driver->log( $plugin->translate( 'Start importing from HTML.' ) );
+        foreach my $path ( @target_files ) {
+            eval {
+                if ( $driver->process( $path ) ) {
+                    push @import_successes, $path;
+                } else {
+                    die $driver->errstr;
+                }
+            };
+            if ( my $errstr = $@ ) {
+                $driver->log( $plugin->translate( "Import Error: '[_1]' ([_2])", $path, $errstr ) );
+                push @import_failures, { path => $path, errstr => $errstr };
+            }
+        }
+        $driver->log( $plugin->translate( 'Finish importing from HTML.' ) );
+    };
+    if ( $can_background_task ) {
+        MT::Util::start_background_task( $import_func );
+    } else {
+        $import_func->();
+    }
+    
+    my $tmpl = $app->load_tmpl( 'htmlimport.tmpl' );
+    my $params = {
+        can_background_task => $can_background_task,
+        import_successes    => \@import_successes,
+        import_failures     => \@import_failures,
+        rules               => \@rules,
+        import_from         => $import_from,
+        target_type         => 'file',
+        target_files        => \@target_files,
         override            => $override,
     };
     $app->build_page( $tmpl, $params );

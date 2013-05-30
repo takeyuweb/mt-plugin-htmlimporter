@@ -13,24 +13,37 @@
         label="<__trans phrase='Import from'>">
         <mt:var name="import_from" escape="html">
     </mtapp:setting>
-    <mtapp:setting
-        id="target_directories"
-        label="<__trans phrase='Target directories'>">
-        <ul>
-            <mt:loop name="target_directories">
-                <li><mt:var name='__value__' escape="html"></ul>
-            </mt:loop>
-        </ul>
-    </mtapp:setting>
-    <mtapp:setting
-        id="exclude_directories"
-        label="<__trans phrase='Exclude directories'>">
-        <ul>
-            <mt:loop name="exclude_directories">
-                <li><mt:var name='__value__' escape="html"></ul>
-            </mt:loop>
-        </ul>
-    </mtapp:setting>
+    <mt:If name="target_type" eq="directory">
+        <mtapp:setting
+            id="target_directories"
+            label="<__trans phrase='Target directories'>">
+            <ul>
+                <mt:loop name="target_directories">
+                    <li><mt:var name='__value__' escape="html"></ul>
+                </mt:loop>
+            </ul>
+        </mtapp:setting>
+        <mtapp:setting
+            id="exclude_directories"
+            label="<__trans phrase='Exclude directories'>">
+            <ul>
+                <mt:loop name="exclude_directories">
+                    <li><mt:var name='__value__' escape="html"></ul>
+                </mt:loop>
+            </ul>
+        </mtapp:setting>
+    </mt:If>
+    <mt:If name="target_type" eq="file">
+        <mtapp:setting
+            id="target_files"
+            label="<__trans phrase='Target files'>">
+            <ul>
+                <mt:loop name="target_files">
+                    <li><mt:var name='__value__' escape="html"></ul>
+                </mt:loop>
+            </ul>
+        </mtapp:setting>
+    </mt:If>
     <mtapp:setting
         id="override"
         label="<__trans phrase='Override(Not recommended)'>">
@@ -74,7 +87,7 @@
     <h2>インポート失敗</h2>
     <ul>
     <mt:loop name="import_failures">
-        <li><mt:var name="__value__" escape="html"></li>
+        <li><mt:var name="path" escape="html"> (<mt:var name="errstr">)</li>
     </mt:loop>
     </ul>
 </mt:If>

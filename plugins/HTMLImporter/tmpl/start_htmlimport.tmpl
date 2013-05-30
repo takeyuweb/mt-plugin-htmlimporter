@@ -2,6 +2,9 @@
 
 <mt:setvarblock name="html_head" append="1">
 <style type="text/css">
+.target-settings {
+    display: none;
+}
 .import-rule {
     background-color: #f6f6f6;
     border: solid 1px #ccc;
@@ -42,26 +45,46 @@
         <mtapp:setting
             id="import_from"
             required="1"
-            label="<__trans phrase='Import from'>"
+            label="<__trans phrase='Document root(import from)'>"
             hint="<__trans phrase='It is mapped to the web site root.'>"
             show_hint="1">
             <input type="text" name="import_from" id="import_from" class="text required" value="<mt:var name='import_from' escape='html'>" />
         </mtapp:setting>
         <mtapp:setting
-            id="target_directories"
+            id="target_type"
             required="1"
-            label="<__trans phrase='Target sub directories'>"
-            hint="<__trans phrase='Separated by a return.'>"
-            show_hint="1">
-            <textarea name="target_directories" id="target_directories" class="text low required"><mt:if name="import_from"><mt:var name='target_directories'><mt:else>./</mt:if></textarea>
+            label="<__trans phrase='Target type'>">
+            <input type="radio" name="target_type" id="target_type_directory" value="directory" checked/>
+            <label for="target_type_directory"><__trans phrase="Directory"></label>
+            <input type="radio" name="target_type" id="target_type_file" value="file"/>
+            <label for="target_type_file"><__trans phrase="File"></label>
         </mtapp:setting>
-        <mtapp:setting
-            id="exclude_directories"
-            label="<__trans phrase='Exclude sub directories'>"
-            hint="<__trans phrase='Separated by a return.'>"
-            show_hint="1">
-            <textarea name="exclude_directories" id="exclude_directories" class="text low"><mt:var name='exclude_directories'></textarea>
-        </mtapp:setting>
+        <div id="directory_settings" class="target-settings">
+            <mtapp:setting
+                id="target_directories"
+                required="1"
+                label="<__trans phrase='Target sub directories'>"
+                hint="<__trans phrase='Relative path for directory. Separated by a return.'>"
+                show_hint="1">
+                <textarea name="target_directories" id="target_directories" class="text low required"><mt:if name="import_from"><mt:var name='target_directories'><mt:else>./</mt:if></textarea>
+            </mtapp:setting>
+            <mtapp:setting
+                id="exclude_directories"
+                label="<__trans phrase='Exclude sub directories'>"
+                hint="<__trans phrase='Relative path for directory. Separated by a return.'>"
+                show_hint="1">
+                <textarea name="exclude_directories" id="exclude_directories" class="text low"><mt:var name='exclude_directories'></textarea>
+            </mtapp:setting>
+        </div>
+        <div id="file_settings" class="target-settings">
+            <mtapp:setting
+                id="target_files"
+                label="<__trans phrase='Target files'>"
+                hint="<__trans phrase='Relative path for file. Separated by a return.'>"
+                show_hint="1">
+                <textarea name="target_files" id="target_files" class="text low"><mt:var name='target_files'></textarea>
+            </mtapp:setting>
+        </div>
         <mtapp:setting
             id="override"
             label="<__trans phrase='Override(Not recommended)'>"
@@ -140,6 +163,13 @@
 
 <mt:setvarblock name="jq_js_include" append="1">
     (function($){
+        $('.target-settings').filter('#' + $(':input[name="target_type"]:checked').val() + '_settings').show();
+        $(document).on('click', ':input[name="target_type"]', function(e){
+            var checkbox = e.target;
+            $('.target-settings').hide();
+            $('.target-settings').filter('#' + $(checkbox).val() + '_settings').show();
+        });
+    
         function addRuleFields(params) {
             params = $.extend({}, { "source_type": "", "source": "", "target": "" }, params);
             params.count = $('.import-rule').length;

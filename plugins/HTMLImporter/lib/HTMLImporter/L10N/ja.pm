@@ -9,15 +9,19 @@ use vars qw( %Lexicon );
 %Lexicon = (
     '_PLUGIN_DESCRIPTION'   => '既存のHTMLファイルをMTのウェブページとして一括インポート、CMS化を支援します。',
     # config.yaml
-    'Import from Web Site'  => 'ウェブサイトからインポート',
     'Import from HTML'      => 'HTMLからインポート',
     # tmpl/start_import.tmpl
     'Import settings'   => 'インポート設定',
-    'Import from'       => 'インポート元ルートディレクトリ',
+    'Document root(import from)'            => 'ドキュメントルート（インポート元）',
     'It is mapped to the web site root.'    => 'ウェブサイトルートにマッピングされます。',
+    'Target type'       => '対象',
+    'Directory'         => 'ディレクトリ',
+    'File'              => 'ファイル',
     'Target sub directories'    => '対象サブディレクトリ',
-    'Separated by a return.'    => '"インポート元ルートディレクトリ"以下にあるディレクトリのうち、対象とするものを改行区切りで記入。「.」の場合すべて。',
+    'Relative path for directory. Separated by a return.'    => '"インポート元ルートディレクトリ"以下にあるディレクトリのうち、対象とするものを相対パスで記入（改行区切り）',
+    'Relative path for file. Separated by a return.'    => '"インポート元ルートディレクトリ"以下にあるファイルのうち、対象とするものを相対パスで記入（改行区切り）',
     'Exclude sub directories'    => '除外サブディレクトリ',
+    'Target files'      => '対象ファイル',
     'Override(Not recommended)'    => '上書き（非推奨）',
     'Overwrite when an import target was present.'  => 'インポート先が存在するときに上書き（更新）します。',
     'Source type'       => 'データソース種別',
@@ -41,5 +45,5 @@ use vars qw( %Lexicon );
     'Start importing from HTML.'        => 'HTMLインポートを開始しました。',
     'Finish importing from HTML.'       => 'HTMLインポートを完了しました。',
     "imported: '[_1]'"      => "インポートしました： '[_1]'",
-    "Import Error: '[_1]' ([_2])"   => "インポートしました： '[_1]'（[_2]）",
+    "Import Error: '[_1]' ([_2])"   => "インポートエラー： '[_1]'（[_2]）",
 );
