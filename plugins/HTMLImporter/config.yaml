@@ -1,7 +1,7 @@
 id: HTMLImporter
 name: HTML Importer
 key: htmlimporter
-version: 0.0.2
+version: 0.0.3
 schema_version: 0.005
 author_name: Yuichi Takeuchi
 author_link: http://takeyu-web.com/
