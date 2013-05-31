@@ -215,14 +215,14 @@ sub _save_assets {
     my $save_asset = sub {
         my ( $href ) = @_;
         my $absolute_path;
-        my $uri = URI->new( $href );
         if ( $href =~ m!^\w+://! ) {
             # 
         } elsif ( $href =~ m!^/! ) {
+            my $uri = URI->new( $href );
             $absolute_path = File::Spec->catfile( $root_dir, $uri->path() );
         } else {
-            $href =~ m!^([^#]*)!;
-            $absolute_path = File::Spec->rel2abs( $1, File::Spec->catdir( $root_dir, File::Basename::dirname( $relative_file ) ) );
+            my $uri = URI->new_abs( File::Spec->catfile( File::Basename::dirname( $relative_file ), $href ), 'http://test.host' );
+            $absolute_path = File::Spec->catfile( $root_dir, $uri->path() );
         }
         return unless $absolute_path;
         
