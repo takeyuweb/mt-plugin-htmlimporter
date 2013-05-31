@@ -89,8 +89,9 @@ sub process {
                 $html = join "\n", @parts;
             }
         } elsif ( $source_type eq 'regexp' ) {
-            if ( $text =~ m|@{[ $rule->{ source } ]}|si ) {
-                $html = $1;
+            my @matches = $text =~ m|@{[ $rule->{ source } ]}|sig;
+            if ( @matches ) {
+                $html = join "\n", @matches;
             }
         }
         
