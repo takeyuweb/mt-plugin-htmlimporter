@@ -26,6 +26,7 @@ HTML Importer for Movable Type
   * MovableType上の「フォルダ」の自動生成
 * アイテムインポート
   * 記事中に含まれる画像ファイルやリンク先のPDFなどのファイルをウェブページアイテムとして自動登録
+* コールバックによる拡張
 * 無償＆無保証
   * サポートが必要な方は、他の有償プロダクトをお求め下さい
   * 何が起こっても開発者は一切責任を負いません
@@ -56,6 +57,38 @@ MovableType標準の機構を利用して、時間のかかるインポートを
     LaunchBackgroundTasks 1
 
 ただし、PSGI動作時の時は、バックグラウンド処理は無効になります。（MTのバックグラウンド処理機構が無効化されるため）
+
+## コールバック
+
+### cms\_pre_htmlimport.page
+
+インポートされたウェブページが保存される前に呼ばれます。
+偽を返すことで保存せずスキップします。
+
+    # カスタムフィールド page_skip_htmlimport が真のときインポートしないサンプル
+    # 例えば、インポート済みのウェブページについて、「上書き」が選択されても上書きしたくないときなど
+    sub _cb_cms_pre_htmlimport_page {
+        my ( $cb, $app, $obj, $original ) = @_;
+        
+        my $field = 'field.page_skip_htmlimport';
+        if ( $obj->$field ) {
+            return $app->error( 'Skipped.' );
+        } else {
+            return 1;
+        }
+    }
+
+### cms\_post_htmlimport.page
+
+インポートされたウェブページや記事アイテムなどが保存された後に呼ばれます。
+
+    sub _cb_cms_post_htmlimport_page {
+        my ( $cb, $app, $obj, $original ) = @_;
+        
+        # インポートされたウェブページオブジェクトについての処理
+        
+        1;
+    }
 
 ##Contributing to HTML Importer
 

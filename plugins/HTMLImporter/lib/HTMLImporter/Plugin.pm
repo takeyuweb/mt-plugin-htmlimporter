@@ -91,7 +91,8 @@ sub _htmlimport_by_directory {
         base_path   => $import_from,
         rules       => \@rules,
         allow_override  => $override,
-        suffix_list => \@suffix_list );
+        suffix_list => \@suffix_list,
+        logging     => 1 );
     
     my $can_background_task = MT::Util::launch_background_tasks();
     my @import_successes = ();
@@ -187,7 +188,8 @@ sub _htmlimport_by_file {
         base_path   => $import_from,
         rules       => \@rules,
         allow_override  => $override,
-        suffix_list => \@suffix_list );
+        suffix_list => \@suffix_list,
+        logging     => 1 );
     
     my $can_background_task = MT::Util::launch_background_tasks();
     my @import_successes = ();

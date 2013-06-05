@@ -37,6 +37,7 @@ sub init {
     $driver->{ rules }          = $args{ rules };
     $driver->{ allow_override } = $args{ allow_override };
     $driver->{ suffix_list }    = $args{ suffix_list };
+    $driver->{ logging }        = $args{ logging };
     $driver;
 }
 
@@ -100,15 +101,8 @@ sub process {
     $tree = $tree->delete;
    
     my @assets;
-    my $page;
     my $original;
-    my @pages = MT->model( 'page' )->load({ blog_id => $blog->id, basename => $data{ basename } } );
-    foreach ( @pages ) {
-        if ( $src_relative_path eq $_->im_src_relative_path ) {
-            $page = $_;
-            last;
-        }
-    }
+    my $page = MT->model( 'page' )->load({ blog_id => $blog->id, im_src_relative_path => $src_relative_path }, { limit => 1 } );
     if ( $page ) {
         return $driver->error( $plugin->translate( "'[_1]' has already been imported. Skipped.", $src_relative_path ), ( page => $page ) )
             unless $driver->{ allow_override };
@@ -117,7 +111,7 @@ sub process {
         $page = MT->model( 'page' )->new;
         $page->blog_id( $blog->id );
         $page->author_id( $author->id );
-        $page->status( MT->model( 'page' )->RELEASE() );
+        $page->status( $blog->status_default );
         $page->allow_comments( $blog->allow_comments_default );
         $page->allow_pings( $blog->allow_pings_default );
         $page->convert_breaks( 'richtext' );
@@ -133,7 +127,20 @@ sub process {
         }
     }
     
-    $app->run_callbacks( 'cms_pre_save.page', $app, $page, $original );
+    $app->run_callbacks( 'cms_pre_save.page', $app, $page, $original )
+        || return $app->error(
+            $app->translate(
+                "Saving [_1] failed: [_2]",
+                MT->model( 'page' )->class_label, $app->errstr
+            )
+        );
+    $app->run_callbacks( 'cms_pre_htmlimport.page', $app, $page, $original )
+        || return $app->error(
+            $plugin->translate(
+                "Importing [_1] failed: [_2]",
+                MT->model( 'page' )->class_label, $app->errstr
+            )
+        );
     $page->save or die $page->errstr;
     
     if ( my $relative_path = $src_relative_path ) {
@@ -164,6 +171,7 @@ sub process {
         }
     }
     $app->run_callbacks( 'cms_post_save.page', $app, $page, $original );
+    $app->run_callbacks( 'cms_post_htmlimport.page', $app, $page, $original );
     
     $driver->log( $plugin->translate( "imported: '[_1]'", $path ), ( page => $page ) );
     
@@ -296,6 +304,7 @@ sub log {
     my $driver = shift;
     my $message = shift;
     my %opts = @_;
+    return unless $driver->{ logging };
     my $page = $opts{ page };
     MT->log({
         blog_id     => $driver->{ blog }->id,
