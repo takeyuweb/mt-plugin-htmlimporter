@@ -69,8 +69,8 @@ sub _htmlimport_by_directory {
     my $override = $q->param( 'override' ) eq '1' ? 1 : 0;
     my @target_directories = grep { $_ ne "" } split(/\r?\n/, ( $q->param( 'target_directories' ) || '' ) );
     @target_directories = map{ File::Spec->catdir( $import_from, $_ ) } @target_directories;
-    my @exclude_directories = grep { $_ ne "" } split(/\r?\n/, ( $q->param( 'exclude_directories' ) || '' ) );
-    @exclude_directories = map{ File::Spec->catdir( $import_from, $_ ) } @exclude_directories;
+    my @exclude_paths = grep { $_ ne "" } split(/\r?\n/, ( $q->param( 'exclude_paths' ) || '' ) );
+    @exclude_paths = map{ File::Spec->catdir( $import_from, $_ ) } @exclude_paths;
     
     my @suffix_list = @{ $app->config->HTMLSuffix };
     
@@ -100,13 +100,13 @@ sub _htmlimport_by_directory {
     my $filter;
     $filter = sub {
         my ( $type, $path ) = @_;
+        foreach ( @exclude_paths ) {
+            my $exclude_path = quotemeta( $_ );
+            if ( $path =~ /^$exclude_path/ ) {
+                return 0;
+            }
+        };
         if ( $type eq 'directory' ) {
-            foreach ( @exclude_directories ) {
-                my $exclude_directory = quotemeta( $_ );
-                if ( $path =~ /^$exclude_directory($|\/)/ ) {
-                    return 0;
-                }
-            };
             return 1;
         } elsif ( $type eq 'file' ) {
             my @parts = ( File::Basename::fileparse( $path, @suffix_list ) );
@@ -151,7 +151,7 @@ sub _htmlimport_by_directory {
         import_from         => $import_from,
         target_type         => 'directory',
         target_directories  => \@target_directories,
-        exclude_directories => \@exclude_directories,
+        exclude_paths       => \@exclude_paths,
         override            => $override,
     };
     $app->build_page( $tmpl, $params );

@@ -69,11 +69,11 @@
                 <textarea name="target_directories" id="target_directories" class="text low required"><mt:if name="import_from"><mt:var name='target_directories'><mt:else>./</mt:if></textarea>
             </mtapp:setting>
             <mtapp:setting
-                id="exclude_directories"
-                label="<__trans phrase='Exclude sub directories'>"
-                hint="<__trans phrase='Relative path for directory. Separated by a return.'>"
+                id="exclude_paths"
+                label="<__trans phrase='Exclude path (left-hand match)'>"
+                hint="<__trans phrase='Relative path for file or directory. Separated by a return.'>"
                 show_hint="1">
-                <textarea name="exclude_directories" id="exclude_directories" class="text low"><mt:var name='exclude_directories'></textarea>
+                <textarea name="exclude_paths" id="exclude_paths" class="text low"><mt:var name='exclude_paths'></textarea>
             </mtapp:setting>
         </div>
         <div id="file_settings" class="target-settings">
