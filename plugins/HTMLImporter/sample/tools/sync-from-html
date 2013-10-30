@@ -1,0 +1,240 @@
+#!/usr/bin/env perl
+
+# HTMLインポート機能を使って同期させるサンプル
+
+#  perl tools/sync-from-html
+
+use strict;
+use utf8;
+use warnings;
+use lib $ENV{MT_HOME} ? "$ENV{MT_HOME}/lib" : 'lib';
+use Data::Dumper;
+use MT;
+use MT::Util;
+
+package MT;
+sub mode {
+    'htmlsync';
+}
+sub user {
+    my $app = shift;
+    $app->{ author } = $_[0] if @_;
+    return $app->{ author };
+}
+
+package main;
+
+use Getopt::Long;
+use Pod::Usage;
+GetOptions(
+    "config=s" => \my ( $cfg ),
+ );
+$cfg = 'mt-config.cgi' unless  defined $cfg;
+
+my $app = new MT(($cfg ? ('Config' => $cfg) : ())) or die MT->errstr;
+$app->{vtbl}                 = {};
+$app->{is_admin}             = 0;
+$app->{template_dir}         = 'cms';
+$app->{user_class}           = 'MT::Author';
+$app->{plugin_template_path} = 'tmpl';
+$app->run_callbacks( 'init_app', $app );
+
+
+############## 設定ここから #################
+
+# インポート元のドキュメントルート
+my $import_from = '/var/www/html';
+
+# インポートしたページの所有者ID
+my $user_id = 1;
+
+# インポート先ブログ・ウェブサイトID
+my $blog_id = 3;
+
+# ディレクトリインポート設定
+my @target_directories = qw(
+    dir1
+    dir2
+);
+
+# ディレクトリインポート設定（除外）
+my @exclude_paths = qw(
+    _baks
+    _mm
+    _notes
+    dir1/index.html
+    index.html
+    dir3
+ );
+
+# 単体インポート設定
+my @target_files = qw(
+    dir4/index.html
+);
+
+# インポート対象の拡張子
+my @suffix_list = @{ $app->config->HTMLSuffix };
+
+# フィールド割り当て設定
+# 上から順に適用され、マッチしたものがセットされていく。マッチしなければなにもしない
+# よって同じフィールドに割り当てたものは下に行くほど詳細な指定にすればよい
+my @rules = (
+    { source_type => 'css', source => 'body', target => 'text' },
+    { source_type => 'css', source => '#content-panel', target => 'text' },
+    { source_type => 'css', source => '#main-content-area', target => 'text' },
+    { source_type => 'regexp', source => '<!-- InstanceBeginEditable name="main" -->(.*?)<!-- InstanceEndEditable -->', target => 'text' },
+    { source_type => 'regexp', source => '<!-- InstanceBeginEditable name="original-style" -->(.*?)<!-- InstanceEndEditable -->', target => 'field.page_html_header' },
+    { source_type => 'regexp', source => '<!-- InstanceBeginEditable name="script" -->(.*?)<!-- InstanceEndEditable -->', target => 'field.page_html_footer' },
+    { source_type => 'regexp', source => '<!-- InstanceBeginEditable name="doctitle" -->.*?(?:<style[^>]*>(.+?)</style>).*?<!-- InstanceEndEditable -->', target => 'field.page_style1' },
+    { source_type => 'regexp', source => '<!-- InstanceBeginEditable name="doctitle" -->.*?(?:<script[^>]*>(.+?)</script>).*?<!-- InstanceEndEditable -->', target => 'field.page_script1' },
+    { source_type => 'regexp', source => '<link rel="alternate" href="(.*?)" media="handheld" />', target => 'field.page_handheld_url' },
+);
+
+# ログ書き出し先
+my $log_file = '/var/www/mt/log/import.log';
+
+
+############## 設定ここまで #################
+
+my $blog = $blog_id ? MT->model( 'blog' )->load( $blog_id ) : undef;
+$blog or pod2usage("no given blog");
+my $user = $user_id ? MT->model( 'author' )->load( $user_id ) : undef;
+$user or pod2usage("no given user");
+$app->user( $user );
+
+require HTMLImporter::Plugin;
+my $plugin = MT->component( 'HTMLImporter' );
+
+sub _htmlimport_by_directory {
+    $import_from = File::Spec->canonpath( $import_from );
+    my @target_directories = map{ File::Spec->catdir( $import_from, $_ ) } @target_directories;
+    my @exclude_paths = map{ File::Spec->catdir( $import_from, $_ ) } @exclude_paths;
+    
+    require HTMLImporter::Driver;
+    my $driver = HTMLImporter::Driver->new( 'Local',
+        blog        => $blog,
+        user        => $user,
+        base_path   => $import_from,
+        rules       => \@rules,
+        allow_override  => 1,
+        suffix_list => \@suffix_list );
+    
+    my @import_successes = ();
+    my @import_failures = ();
+    my $filter;
+    $filter = sub {
+        my ( $type, $path ) = @_;
+        foreach ( @exclude_paths ) {
+            my $exclude_path = quotemeta( $_ );
+            if ( $path =~ /^$exclude_path/ ) {
+                return 0;
+            }
+        };
+        if ( $type eq 'directory' ) {
+            return 1;
+        } elsif ( $type eq 'file' ) {
+            my @parts = ( File::Basename::fileparse( $path, @suffix_list ) );
+            my $suffix = $parts[2];
+            if ( $suffix ) {
+                return 1;
+            } else {
+                return 0;
+            }
+        }
+    };
+    my $import_func = sub {
+        my $process = sub {
+            my ( $path ) = @_;
+            my $basename = File::Basename::basename( $path, @suffix_list );
+            eval {
+                my $page;
+                if ( $page = $driver->process( $path ) ) {
+                    log_write( "Import Success: '$path'" );
+                } else {
+                    die $driver->errstr;
+                }
+            };
+            if ( my $errstr = $@ ) {
+                log_write( $plugin->translate( "Import Error: '[_1]' ([_2])", $path, $errstr ) );
+            }
+        };
+        log_write( $plugin->translate( 'Start importing from HTML.' ) );
+        foreach my $target_directory ( @target_directories ) {
+            $driver->trace( $target_directory, $filter, $process );
+        }
+        log_write( $plugin->translate( 'Finish importing from HTML.' ) );
+    };
+    $import_func->();
+}
+
+sub _htmlimport_by_file {
+    $import_from = File::Spec->canonpath( $import_from );
+    my @target_files = map{ File::Spec->catdir( $import_from, $_ ) } @target_files;
+    
+    require HTMLImporter::Driver;
+    my $driver = HTMLImporter::Driver->new( 'Local',
+        blog        => $blog,
+        user        => $user,
+        base_path   => $import_from,
+        rules       => \@rules,
+        allow_override  => 1,
+        suffix_list => \@suffix_list );
+    
+    my @import_successes = ();
+    my @import_failures = ();
+    my $filter;
+    $filter = sub {
+        my ( $type, $path ) = @_;
+        if ( $type eq 'directory' ) {
+            return 1;
+        } elsif ( $type eq 'file' ) {
+            my @parts = ( File::Basename::fileparse( $path, @suffix_list ) );
+            my $suffix = $parts[2];
+            if ( $suffix ) {
+                return 1;
+            } else {
+                return 0;
+            }
+        }
+    };
+    my $import_func = sub {
+        log_write( $plugin->translate( 'Start importing from HTML.' ) );
+        foreach my $path ( @target_files ) {
+            eval {
+                if ( $driver->process( $path ) ) {
+                    log_write( "Import Success: '$path'" );
+                } else {
+                    die $driver->errstr;
+                }
+            };
+            if ( my $errstr = $@ ) {
+                log_write( $plugin->translate( "Import Error: '[_1]' ([_2])", $path, $errstr ) );
+            }
+        }
+        log_write( $plugin->translate( 'Finish importing from HTML.' ) );
+    };
+    $import_func->();
+}
+sub log_write {
+    my ($message) = @_;
+    my ($sec, $min, $hour, $mday, $mon, $year, $wday, $yday, $isdst) = localtime(time);
+    my $datetime = sprintf('%04d/%02d/%02d %02d:%02d:%02d', $year+1900, $mon+1, $mday, $hour, $min, $sec);
+
+    print $log_file . ' ' . $message;
+    open LOG, ">> $log_file" or die;
+    eval{
+        require Fcntl;
+        flock LOG, Fcntl::LOCK_EX();
+    };
+    my $oldFh = select(LOG);
+    $| = 1;
+    select($oldFh);
+    print LOG "[$datetime] $message\n";
+    close LOG;
+}
+
+
+_htmlimport_by_directory();
+_htmlimport_by_file();
+
+1;

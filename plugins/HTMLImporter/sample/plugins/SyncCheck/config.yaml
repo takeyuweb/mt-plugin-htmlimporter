@@ -1,0 +1,10 @@
+id: SyncCheck
+name: SyncCheck
+key: synchceck
+version: 0.0.2
+author_name: Yuichi Takeuchi
+author_link: http://takeyu-web.com/
+
+callbacks:
+    cms_pre_save.page: $synchceck::SyncCheck::Plugin::_cb_cms_post_save_page
+    cms_pre_htmlimport.page: $synchceck::SyncCheck::Plugin::_cb_cms_pre_htmlimport

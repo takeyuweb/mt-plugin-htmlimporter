@@ -109,6 +109,7 @@ sub process {
         $original = $page->clone;
     } else {
         $page = MT->model( 'page' )->new;
+        $original = $page->clone;
         $page->blog_id( $blog->id );
         $page->author_id( $author->id );
         $page->status( $blog->status_default );
@@ -128,14 +129,14 @@ sub process {
     }
     
     $app->run_callbacks( 'cms_pre_save.page', $app, $page, $original )
-        || return $app->error(
+        || return $driver->error(
             $app->translate(
                 "Saving [_1] failed: [_2]",
                 MT->model( 'page' )->class_label, $app->errstr
             )
         );
     $app->run_callbacks( 'cms_pre_htmlimport.page', $app, $page, $original )
-        || return $app->error(
+        || return $driver->error(
             $plugin->translate(
                 "Importing [_1] failed: [_2]",
                 MT->model( 'page' )->class_label, $app->errstr
